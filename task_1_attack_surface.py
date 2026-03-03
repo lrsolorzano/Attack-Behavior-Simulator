@@ -1,33 +1,44 @@
-import nmap
+import os
+import subprocess
+import json
+from datetime import datetime
 
-# Initialize the Nmap Port Scanner
-nm = nmap.PortScanner()
+class AttackSurfaceCharacterization:
+    def __init__(self, target):
+        self.target = target
+        self.nmap_output = None
+        self.vulnerabilities = []
 
-def characterize_attack_surface(target):
-    """Characterizes the attack surface of a given target using Nmap."""
-    nm.scan(target)
-    print(f"Scanning {target}...")
-    
-    # Print general information about the target
-    print(f"Host: {nm[target].hostname()}")
-    print(f"State: {nm[target].state()}")
-    
-    # Get all protocols
-    for proto in nm[target].all_protocols():
-        print(f"Protocol: {proto}")
-        lport = list(nm[target][proto].keys())
-        lport.sort()
-        for port in lport:
-            print(f"Port: {port}	State: {nm[target][proto][port]['state']}")
+    def nmap_scan(self):
+        print(f"Scanning {self.target}...")
+        self.nmap_output = subprocess.check_output(['nmap', '-sV', self.target]).decode('utf-8')
+        print("Scan completed.")
 
-def identify_vulnerabilities(target):
-    """Identifies vulnerabilities on a target using Nmap's scripting engine."""
-    nm.scan(target, arguments='--script vuln')
-    print(f"Identifying vulnerabilities on {target}...")
-    for script in nm[target].scripts:
-        print(f"Script: {script} | Output: {nm[target].scripts[script]}")
+    def identify_vulnerabilities(self):
+        print("Identifying vulnerabilities...")
+        if self.nmap_output:
+            for line in self.nmap_output.split('\n'):
+                if "open" in line:
+                    # Dummy vulnerability identification based on open ports
+                    port_info = line.split()
+                    if len(port_info) > 1:
+                        self.vulnerabilities.append(port_info[1])
+        print("Vulnerabilities identified:", self.vulnerabilities)
+
+    def generate_report(self):
+        timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+        report = {
+            'timestamp': timestamp,
+            'target': self.target,
+            'vulnerabilities': self.vulnerabilities,
+        }
+        with open(f'report_{self.target.replace(".", "_")}.json', 'w') as f:
+            json.dump(report, f, indent=4)
+        print(f"Report generated: report_{self.target.replace('.', '_')}.json")
 
 if __name__ == '__main__':
-    target_ip = input('Enter target IP to scan: ')
-    characterize_attack_surface(target_ip)
-    identify_vulnerabilities(target_ip)
+    target = input("Enter the target IP or domain: ")
+    asc = AttackSurfaceCharacterization(target)
+    asc.nmap_scan()
+    asc.identify_vulnerabilities()
+    asc.generate_report()
