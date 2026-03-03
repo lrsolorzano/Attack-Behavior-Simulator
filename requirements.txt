@@ -1,0 +1,10 @@
+nmap
+netaddr
+pycvss
+scapy
+paramiko
+requests
+pandas
+matplotlib
+numpy
+pyyaml
